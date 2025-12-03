@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Firebase config (contains sensitive keys)
+firebase.ts
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

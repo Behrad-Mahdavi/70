@@ -13,10 +13,24 @@ View your app in AI Studio: https://ai.studio/apps/drive/15n7Zp4l15l7EoJ3nSiSfl4
 **Prerequisites:** Node.js
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+
+2. Setup Firebase configuration:
+   - Copy `firebase.example.ts` to `firebase.ts`:
+     ```bash
+     cp firebase.example.ts firebase.ts
+     ```
+   - Open `firebase.ts` and replace the placeholder values with your Firebase project credentials
+   - Get your Firebase config from [Firebase Console](https://console.firebase.google.com/) → Project Settings → Your apps
+
+3. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key (if needed)
+
+4. Run the app:
+   ```bash
+   npm run dev
+   ```
 
 ## Firebase Setup (برای استفاده از چند دستگاه)
 

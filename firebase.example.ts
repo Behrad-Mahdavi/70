@@ -3,14 +3,16 @@ import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+// Firebase configuration
+// Get these values from your Firebase Console: https://console.firebase.google.com/
 const firebaseConfig = {
-  apiKey: "AIzaSyACeGw2SzZsXilOzVdjsCqYAq6y29SbMrc",
-  authDomain: "seeband-d9543.firebaseapp.com",
-  projectId: "seeband-d9543",
-  storageBucket: "seeband-d9543.firebasestorage.app",
-  messagingSenderId: "500984532090",
-  appId: "1:500984532090:web:aa083c5804e8f05d81ffc3",
-  measurementId: "G-6SN2SKZT8Q"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID"
 };
 
 // Initialize Firebase
@@ -31,3 +33,4 @@ if (typeof window !== 'undefined') {
 export { analytics };
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
