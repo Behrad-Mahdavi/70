@@ -63,7 +63,6 @@ const ReadingView: React.FC<ReadingViewProps> = ({
             setShowMilestone(true);
             if (navigator.vibrate) navigator.vibrate(50);
             
-            // ✅ زمان نمایش کوتاه‌تر شد (۲ ثانیه)
             const timer = setTimeout(() => setShowMilestone(false), 2000);
             return () => clearTimeout(timer);
         }
@@ -135,7 +134,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({
 
             {/* Header */}
             <motion.header
-                className="relative z-20 px-6 pt-6 pb-4"
+                className="relative z-20 px-6 pt-6 pb-4 shrink-0"
                 animate={{ opacity: focusMode ? 0 : 1, y: focusMode ? -20 : 0 }}
                 transition={{ duration: 0.3 }}
             >
@@ -163,86 +162,97 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                 </div>
             </motion.header>
 
-            {/* Main Content */}
-            <div className="relative flex-1 z-10 flex items-center justify-center px-4">
-                
-                <div className="absolute left-0 top-0 bottom-0 w-1/4 z-30 cursor-pointer group" onClick={handlePrev}>
-                    <motion.div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity">
-                         <ChevronRight size={32} />
-                    </motion.div>
-                </div>
-
-                <div className="absolute right-0 top-0 bottom-0 w-1/4 z-30 cursor-pointer group" onClick={handleNext}>
-                    <motion.div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity">
-                         <ChevronLeft size={32} />
-                    </motion.div>
-                </div>
-
-                <div className="absolute left-0 right-0 bottom-0 h-1/4 z-20 cursor-pointer" onClick={handleNext} />
-
-                {/* Card */}
-                <AnimatePresence mode="wait" custom={direction}>
-                    <motion.div
-                        key={currentIndex}
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="w-full max-w-lg mx-auto relative z-40"
+            {/* ✅ Main Content Area (Scrollable) */}
+            <div className="relative flex-1 z-10 w-full overflow-y-auto no-scrollbar">
+                <div className="min-h-full flex items-center justify-center px-4 py-8">
+                    
+                    {/* --- Tap Zones (Fixed Position) --- */}
+                    {/* Previous (Left) */}
+                    <div 
+                        className="fixed left-0 top-[100px] bottom-[100px] w-1/4 z-30 cursor-pointer group" 
+                        onClick={handlePrev}
                     >
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
-                            
-                            {item.arabicText && (
-                                <div className="flex justify-center mb-4">
-                                    <button
-                                        onClick={toggleArabic}
-                                        className={`
-                                            flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-all duration-300 border
-                                            ${showArabic 
-                                                ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' 
-                                                : 'bg-slate-800/50 text-slate-400 border-transparent hover:bg-slate-700'
-                                            }
-                                        `}
+                        <motion.div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity">
+                             <ChevronRight size={32} />
+                        </motion.div>
+                    </div>
+
+                    {/* Next (Right) */}
+                    <div 
+                        className="fixed right-0 top-[100px] bottom-[100px] w-1/4 z-30 cursor-pointer group" 
+                        onClick={handleNext}
+                    >
+                        <motion.div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity">
+                             <ChevronLeft size={32} />
+                        </motion.div>
+                    </div>
+
+                    {/* ❌ Bottom Tap Zone Removed to allow scrolling */}
+
+                    {/* --- The Card --- */}
+                    <AnimatePresence mode="wait" custom={direction}>
+                        <motion.div
+                            key={currentIndex}
+                            custom={direction}
+                            variants={slideVariants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            className="w-full max-w-lg mx-auto relative z-40"
+                        >
+                            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                                
+                                {item.arabicText && (
+                                    <div className="flex justify-center mb-4">
+                                        <button
+                                            onClick={toggleArabic}
+                                            className={`
+                                                flex items-center gap-2 px-3 py-1.5 rounded-full text-xs transition-all duration-300 border
+                                                ${showArabic 
+                                                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' 
+                                                    : 'bg-slate-800/50 text-slate-400 border-transparent hover:bg-slate-700'
+                                                }
+                                            `}
+                                        >
+                                            <Languages size={14} />
+                                            <span>{showArabic ? 'مخفی کردن عربی' : 'مشاهده متن عربی'}</span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {item.arabicText && (
+                                    <motion.div
+                                        initial={false}
+                                        animate={{ 
+                                            height: showArabic ? 'auto' : 0,
+                                            opacity: showArabic ? 1 : 0,
+                                            marginBottom: showArabic ? 24 : 0
+                                        }}
+                                        transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
+                                        className="overflow-hidden"
                                     >
-                                        <Languages size={14} />
-                                        <span>{showArabic ? 'مخفی کردن عربی' : 'مشاهده متن عربی'}</span>
-                                    </button>
-                                </div>
-                            )}
+                                        <p className="font-arabic text-2xl md:text-3xl leading-loose text-amber-100/90 text-center select-none drop-shadow-md" dir="rtl">
+                                            {item.arabicText}
+                                        </p>
+                                        <div className="w-1/2 mx-auto h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-6" />
+                                    </motion.div>
+                                )}
 
-                            {item.arabicText && (
-                                <motion.div
-                                    initial={false}
-                                    animate={{ 
-                                        height: showArabic ? 'auto' : 0,
-                                        opacity: showArabic ? 1 : 0,
-                                        marginBottom: showArabic ? 24 : 0
-                                    }}
-                                    transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
-                                    className="overflow-hidden"
+                                <p 
+                                    className={`
+                                        text-lg md:text-xl leading-9 text-justify transition-colors duration-500
+                                        ${showArabic ? 'text-slate-300' : 'text-slate-100 font-medium'}
+                                    `}
                                 >
-                                    <p className="font-arabic text-2xl md:text-3xl leading-loose text-amber-100/90 text-center select-none drop-shadow-md" dir="rtl">
-                                        {item.arabicText}
-                                    </p>
-                                    <div className="w-1/2 mx-auto h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-6" />
-                                </motion.div>
-                            )}
+                                    {item.text}
+                                </p>
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
 
-                            <p 
-                                className={`
-                                    text-lg md:text-xl leading-9 text-justify transition-colors duration-500
-                                    ${showArabic ? 'text-slate-300' : 'text-slate-100 font-medium'}
-                                `}
-                            >
-                                {item.text}
-                            </p>
-                        </div>
-                    </motion.div>
-                </AnimatePresence>
-
-                {/* ✅ Milestone Toast Notification (Top Right) */}
+                {/* Milestone Toast Notification */}
                 <AnimatePresence>
                     {showMilestone && (
                         <motion.div
@@ -258,7 +268,6 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                                 </div>
                                 <div>
                                     <p className="text-emerald-400 font-bold text-sm mb-0.5">تبریک!</p>
-                                    {/* حذف ایموجی‌های اضافی برای تمیزتر شدن متن */}
                                     <p className="text-slate-200 text-sm font-medium leading-tight">
                                         {milestoneText.replace(/🎉|🌟|💪|✨|🎯|🌙|🏁/g, '')}
                                     </p>
@@ -271,7 +280,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({
 
             {/* Footer */}
             <motion.footer
-                className="relative z-20 px-6 pb-8 pt-4"
+                className="relative z-20 px-6 pb-8 pt-4 shrink-0"
                 animate={{ opacity: focusMode ? 0 : 1, y: focusMode ? 20 : 0 }}
                 transition={{ duration: 0.3 }}
             >
