@@ -8,7 +8,7 @@ interface DashboardProps {
   onReset: () => void;
 }
 
-const JourneyMap: React.FC<{ completedDays: string[], streak: number }> = ({ completedDays }) => {
+const JourneyMap: React.FC<{ completedDays: string[] }> = ({ completedDays }) => {
   const totalDays = 40;
   // محاسبه تعداد روزهای تکمیل شده (حداکثر ۴۰)
   const completedCount = Math.min(completedDays.length, totalDays);
@@ -20,7 +20,7 @@ const JourneyMap: React.FC<{ completedDays: string[], streak: number }> = ({ com
           <Target size={18} className="text-emerald-400" />
           سفر ۴۰ روزه
         </h3>
-        <span className="text-slate-500 text-sm">{completedCount} از {totalDays} روز</span>
+        <span className="text-slate-500 text-sm font-mono">{completedCount.toLocaleString('fa-IR')} از {totalDays.toLocaleString('fa-IR')} روز</span>
       </div>
 
       <div className="grid grid-cols-8 gap-2 md:gap-3">
@@ -45,7 +45,7 @@ const JourneyMap: React.FC<{ completedDays: string[], streak: number }> = ({ com
               `}
               title={`روز ${dayNumber}`}
             >
-              {/* نمایش اعداد برای همه روزها یا فقط روزهای مهم */}
+              {/* نمایش اعداد: روز اول، روز آخر، مضارب ۵ و روز جاری */}
               {isCompleted || dayNumber % 5 === 0 || dayNumber === 1 ? dayNumber.toLocaleString('fa-IR') : ''}
             </motion.div>
           );
@@ -133,7 +133,6 @@ const Dashboard: React.FC<DashboardProps> = ({ progress, onReset }) => {
       {/* Journey Map */}
       <JourneyMap
         completedDays={progress.completedDays || []}
-        streak={progress.streak}
       />
 
       {/* Stats Grid */}
@@ -188,21 +187,20 @@ const Dashboard: React.FC<DashboardProps> = ({ progress, onReset }) => {
         <span>خواندن مجدد (تمرینی)</span>
       </motion.button>
 
-      {/* Motivational quote */}
-{/* Motivational quote (Hadith) */}
+      {/* Motivational quote (Hadith) */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
         className="text-center mt-8 max-w-xs mx-auto"
       >
-        <p className="text-slate-500 text-[10px] mb-1 font-arabic">
+        <p className="text-slate-500 text-[11px] mb-2 font-arabic tracking-wide">
           «عَجِبتُ لِمَن يَقنَطُ و مَعَهُ الاستِغفارُ»
         </p>
         <p className="text-slate-400 text-xs leading-5 font-medium">
           «در شگفتم از کسی که ناامید می‌شود،<br/>در حالی که استغفار همراه اوست»
         </p>
-        <span className="text-[9px] text-slate-600 block mt-1">(نهج‌البلاغه، حکمت ۸۷)</span>
+        <span className="text-[10px] text-slate-600 block mt-2 font-light">(نهج‌البلاغه، حکمت ۸۷)</span>
       </motion.div>
     </div>
   );

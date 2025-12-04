@@ -1,18 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// ✅ نام متغیر اصلاح شد
 import { istighfarData } from './data/istighfarData';
 import ReadingView from './components/ReadingView';
 import Dashboard from './components/Dashboard';
 import { UserProgress, ReadingState } from './types';
-import { db } from './firebase';
-import { doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const API_BASE_URL = 'https://istighfar-api.liara.run/api';
 const USER_ID_KEY = 'istighfar_user_id';
 const LOCAL_STORAGE_KEY = 'istighfar_app_data_v1';
 const READING_STATE_KEY = 'istighfar_reading_state';
 
-const getTodayString = () => new Date().toISOString().split('T')[0];
+// ✅ کد اصلاح شده (تاریخ محلی سیستم کاربر):
+const getTodayString = () => {
+  const d = new Date();
+  // تنظیم اختلاف زمانی برای گرفتن تاریخ درست لوکال
+  const offset = d.getTimezoneOffset();
+  const localDate = new Date(d.getTime() - (offset * 60 * 1000));
+  return localDate.toISOString().split('T')[0];
+};
 
 // Get or create a unique user ID
 const getUserId = (): string => {
@@ -39,9 +44,6 @@ const loadReadingState = (): number => {
     const stored = localStorage.getItem(READING_STATE_KEY);
     if (stored) {
       const state: ReadingState = JSON.parse(stored);
-      // Only restore if updated today to encourage fresh start, 
-      // OR allow continuing if it's the same session logic (optional)
-      // For now, let's allow resuming anytime within the same day
       const today = getTodayString();
       if (state.lastUpdated.startsWith(today)) {
         return state.currentIndex;
@@ -118,20 +120,18 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Sync Data with Firestore
+  // Sync Data with Backend API
   useEffect(() => {
     if (!userId) return;
 
-    const userDocRef = doc(db, 'users', userId);
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
 
-    const unsubscribeSnapshot = onSnapshot(
-      userDocRef,
-      async (docSnap) => {
-        try {
-          if (docSnap.exists()) {
-            const data = docSnap.data() as UserProgress;
+          if (data) {
             const today = getTodayString();
-
             let effectiveStreak = data.streak || 0;
 
             if (data.lastCompletedDate) {
@@ -147,50 +147,48 @@ const App: React.FC = () => {
 
             const isDoneToday = data.lastCompletedDate === today;
 
-            setProgress({
+            const newProgress = {
               ...data,
               streak: effectiveStreak,
               hasFinishedToday: isDoneToday,
               completedDays: data.completedDays || [],
-            });
+            };
+
+            setProgress(newProgress);
 
             if (isDoneToday) {
               setView('dashboard');
               clearReadingState();
             }
-            setLoading(false);
           } else {
+            // New user or not found on server, try local storage or init
             const localData = loadFromLocalStorage();
-            let dataToSave = localData;
-
-            await setDoc(userDocRef, {
-              ...dataToSave,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            });
+            setProgress(localData);
+            // Sync local data to server if it exists
+            if (localData.totalParagraphsRead > 0) {
+              await fetch(`${API_BASE_URL}/users/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(localData)
+              });
+            }
           }
-        } catch (error) {
-          console.error("Error processing Firestore data:", error);
-          const localData = loadFromLocalStorage();
-          setProgress(localData);
-          if (localData.hasFinishedToday) {
-            setView('dashboard');
-          }
-          setLoading(false);
+        } else {
+          throw new Error('Network response was not ok');
         }
-      },
-      (error) => {
-        console.error("Firestore error:", error);
+      } catch (error) {
+        console.error("Error fetching data from API:", error);
         const localData = loadFromLocalStorage();
         setProgress(localData);
         if (localData.hasFinishedToday) {
           setView('dashboard');
         }
+      } finally {
         setLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribeSnapshot();
+    fetchData();
   }, [userId]);
 
   // Save reading state whenever currentIndex changes
@@ -201,7 +199,6 @@ const App: React.FC = () => {
   }, [currentIndex, view]);
 
   const handleNext = useCallback(() => {
-    // ✅ استفاده از istighfarData
     if (currentIndex < istighfarData.length - 1) {
       setCurrentIndex(prev => prev + 1);
     }
@@ -219,7 +216,6 @@ const App: React.FC = () => {
     const today = getTodayString();
 
     let newStreak = progress.streak;
-    // ✅ استفاده از istighfarData
     let newTotal = progress.totalParagraphsRead + istighfarData.length;
     let newCompletedDays = [...(progress.completedDays || [])];
 
@@ -256,25 +252,22 @@ const App: React.FC = () => {
     setView('dashboard');
     clearReadingState();
 
+    // Optimistic update to local storage
     try {
-      const userDocRef = doc(db, 'users', userId);
-      await updateDoc(userDocRef, {
-        ...updatedData,
-        updatedAt: new Date().toISOString()
-      });
-
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedData));
-      } catch (e) {
-        console.warn("Failed to save to localStorage backup", e);
-      }
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedData));
     } catch (e) {
-      console.error("Error saving progress to Firestore:", e);
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedData));
-      } catch (localError) {
-        console.error("Failed to save to localStorage", localError);
-      }
+      console.warn("Failed to save to localStorage backup", e);
+    }
+
+    // Save to Backend API
+    try {
+      await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+    } catch (e) {
+      console.error("Error saving progress to API:", e);
     }
   };
 
@@ -291,7 +284,6 @@ const App: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          {/* ✅ رنگ‌ها هماهنگ با Tailwind Config جدید */}
           <div className="w-16 h-16 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-slate-400 font-medium">در حال اتصال...</p>
         </motion.div>
@@ -310,7 +302,6 @@ const App: React.FC = () => {
           transition={{ duration: 0.3 }}
         >
           <ReadingView
-            // ✅ استفاده از istighfarData
             item={istighfarData[currentIndex]}
             currentIndex={currentIndex}
             total={istighfarData.length}
