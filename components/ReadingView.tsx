@@ -36,7 +36,6 @@ const ReadingView: React.FC<ReadingViewProps> = ({
     const [milestoneText, setMilestoneText] = useState('');
     const [direction, setDirection] = useState(0);
 
-    // مدیریت وضعیت نمایش عربی (با ذخیره در حافظه مرورگر)
     const [showArabic, setShowArabic] = useState(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('showArabic');
@@ -55,14 +54,12 @@ const ReadingView: React.FC<ReadingViewProps> = ({
     const isLastItem = currentIndex + 1 === total;
     const progress = ((currentIndex + 1) / total) * 100;
 
-    // Check for milestones
     useEffect(() => {
         const milestone = milestoneMessages[currentIndex + 1];
         if (milestone) {
             setMilestoneText(milestone);
             setShowMilestone(true);
             if (navigator.vibrate) navigator.vibrate(50);
-            
             const timer = setTimeout(() => setShowMilestone(false), 2000);
             return () => clearTimeout(timer);
         }
@@ -84,13 +81,14 @@ const ReadingView: React.FC<ReadingViewProps> = ({
         }
     }, [currentIndex, onPrev]);
 
+    // ✅ اصلاح تنظیمات Swipe برای جلوگیری از قفل شدن اسکرول
     const swipeHandlers = useSwipeable({
         onSwipedLeft: handleNext,
         onSwipedRight: handlePrev,
         trackMouse: false,
         trackTouch: true,
         delta: 50,
-        preventScrollOnSwipe: true,
+        preventScrollOnSwipe: false, // 👈 این خط باگ را حل می‌کند
     });
 
     useEffect(() => {
@@ -128,7 +126,8 @@ const ReadingView: React.FC<ReadingViewProps> = ({
     return (
         <div
             {...swipeHandlers}
-            className="fixed inset-0 flex flex-col touch-zone overflow-hidden bg-slate-900 text-slate-100"
+            // ✅ اضافه کردن کلاس touch-pan-y برای اسکرول نرم
+            className="fixed inset-0 flex flex-col touch-zone overflow-hidden bg-slate-900 text-slate-100 touch-pan-y"
         >
             <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-0" />
 
@@ -162,11 +161,10 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                 </div>
             </motion.header>
 
-            {/* ✅ Main Content Area (Scrollable) */}
+            {/* Main Content Area (Scrollable) */}
             <div className="relative flex-1 z-10 w-full overflow-y-auto no-scrollbar">
                 <div className="min-h-full flex items-center justify-center px-4 py-8">
                     
-                    {/* --- Tap Zones (Fixed Position) --- */}
                     {/* Previous (Left) */}
                     <div 
                         className="fixed left-0 top-[100px] bottom-[100px] w-1/4 z-30 cursor-pointer group" 
@@ -187,9 +185,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                         </motion.div>
                     </div>
 
-                    {/* ❌ Bottom Tap Zone Removed to allow scrolling */}
-
-                    {/* --- The Card --- */}
+                    {/* Card */}
                     <AnimatePresence mode="wait" custom={direction}>
                         <motion.div
                             key={currentIndex}
@@ -252,7 +248,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                     </AnimatePresence>
                 </div>
 
-                {/* Milestone Toast Notification */}
+                {/* Milestone Toast */}
                 <AnimatePresence>
                     {showMilestone && (
                         <motion.div
