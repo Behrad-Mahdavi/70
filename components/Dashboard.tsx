@@ -2,6 +2,7 @@ import React from 'react';
 import { UserProgress } from '../types';
 import { motion } from 'framer-motion';
 import { Trophy, RefreshCw, Calendar, BookOpen, Flame, Target } from 'lucide-react';
+import { InstallPrompt } from './InstallPrompt';
 
 interface DashboardProps {
   progress: UserProgress;
@@ -94,7 +95,7 @@ const Dashboard: React.FC<DashboardProps> = ({ progress, onReset }) => {
 
   return (
     <div className="min-h-screen flex flex-col px-6 py-8 max-w-md mx-auto w-full text-slate-100">
-      
+
       {/* Success header */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -192,16 +193,19 @@ const Dashboard: React.FC<DashboardProps> = ({ progress, onReset }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
-        className="text-center mt-8 max-w-xs mx-auto"
+        className="text-center mt-8 max-w-xs mx-auto pb-24"
       >
         <p className="text-slate-500 text-[11px] mb-2 font-arabic tracking-wide">
           «عَجِبتُ لِمَن يَقنَطُ و مَعَهُ الاستِغفارُ»
         </p>
         <p className="text-slate-400 text-xs leading-5 font-medium">
-          «در شگفتم از کسی که ناامید می‌شود،<br/>در حالی که استغفار همراه اوست»
+          «در شگفتم از کسی که ناامید می‌شود،<br />در حالی که استغفار همراه اوست»
         </p>
         <span className="text-[10px] text-slate-600 block mt-2 font-light">(نهج‌البلاغه، حکمت ۸۷)</span>
       </motion.div>
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 };
