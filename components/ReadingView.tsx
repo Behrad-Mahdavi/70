@@ -69,7 +69,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({
         if (isLastItem) {
             onComplete();
         } else {
-            setDirection(1);
+            setDirection(1); // جهت انیمیشن: ورودی از چپ (چون RTL میریم بعدی)
             onNext();
         }
     }, [isLastItem, onComplete, onNext]);
@@ -81,22 +81,30 @@ const ReadingView: React.FC<ReadingViewProps> = ({
         }
     }, [currentIndex, onPrev]);
 
-    // ✅ اصلاح تنظیمات Swipe برای جلوگیری از قفل شدن اسکرول
+    // 🛠 Senior Fix: تنظیم دقیق Swipe
     const swipeHandlers = useSwipeable({
-        onSwipedLeft: handleNext,
-        onSwipedRight: handlePrev,
+        // ✅ اصلاح جهت RTL:
+        // سوایپ به راست (کشیدن انگشت از چپ به راست) -> یعنی "ورق زدن به صفحه بعد" در کتاب فارسی
+        onSwipedRight: handleNext, 
+        // سوایپ به چپ (کشیدن انگشت از راست به چپ) -> یعنی "برگشتن به صفحه قبل"
+        onSwipedLeft: handlePrev,
+        
         trackMouse: false,
         trackTouch: true,
-        delta: 50,
-        preventScrollOnSwipe: false, // 👈 این خط باگ را حل می‌کند
+        delta: 70, // کمی حساسیت را کم کردیم تا با اسکرول اشتباه نشود
+        preventScrollOnSwipe: false, // 🛠 حیاتی: اجازه اسکرول عمودی
     });
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'ArrowLeft' || e.key === ' ') {
-                handleNext();
+            if (e.key === 'ArrowLeft') {
+                 // در کیبورد ArrowLeft معمولا یعنی "عقب" در UI، اما در اسلایدرها یعنی "چپ"
+                 // برای جلوگیری از گیجی، Space و Enter را برای "بعدی" بگذاریم
+                handleNext(); 
             } else if (e.key === 'ArrowRight') {
                 handlePrev();
+            } else if (e.key === ' ' || e.key === 'Enter') {
+                handleNext();
             } else if (e.key === 'f') {
                 setFocusMode(prev => !prev);
             }
@@ -106,8 +114,9 @@ const ReadingView: React.FC<ReadingViewProps> = ({
     }, [handleNext, handlePrev]);
 
     const slideVariants = {
+        // اصلاح انیمیشن‌ها برای RTL
         enter: (direction: number) => ({
-            x: direction > 0 ? -50 : 50,
+            x: direction > 0 ? -50 : 50, // اگر دایرکشن مثبت (بعدی) باشه، از چپ میاد
             opacity: 0,
             scale: 0.95
         }),
@@ -117,7 +126,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({
             scale: 1
         },
         exit: (direction: number) => ({
-            x: direction > 0 ? 50 : -50,
+            x: direction > 0 ? 50 : -50, // به راست خارج میشه
             opacity: 0,
             scale: 0.95
         }),
@@ -126,8 +135,9 @@ const ReadingView: React.FC<ReadingViewProps> = ({
     return (
         <div
             {...swipeHandlers}
-            // ✅ اضافه کردن کلاس touch-pan-y برای اسکرول نرم
-            className="fixed inset-0 flex flex-col touch-zone overflow-hidden bg-slate-900 text-slate-100 touch-pan-y"
+            // 🛠 touch-pan-y: حیاتی‌ترین بخش برای اسکرول نرم در موبایل
+            className="fixed inset-0 flex flex-col overflow-hidden bg-slate-900 text-slate-100 touch-pan-y"
+            dir="rtl" // ✅ تنظیم دایرکشن کل صفحه
         >
             <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-0" />
 
@@ -151,7 +161,8 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                     </button>
                 </div>
 
-                <div className="relative h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="relative h-1.5 bg-slate-800 rounded-full overflow-hidden" dir="ltr"> 
+                    {/* پراگرس بار معمولا LTR پر میشه حتی در سایت فارسی، اما سلیقه‌ایه */}
                     <motion.div
                         className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.5)]"
                         initial={{ width: 0 }}
@@ -162,30 +173,35 @@ const ReadingView: React.FC<ReadingViewProps> = ({
             </motion.header>
 
             {/* Main Content Area (Scrollable) */}
-            <div className="relative flex-1 z-10 w-full overflow-y-auto no-scrollbar">
+            <div className="relative flex-1 z-10 w-full overflow-y-auto no-scrollbar scroll-smooth">
                 <div className="min-h-full flex items-center justify-center px-4 py-8">
                     
-                    {/* Previous (Left) */}
+                    {/* --- Tap Zones --- */}
+                    {/* 🛠 Senior Fix: این دکمه‌های نامرئی در موبایل حذف شدند (hidden) تا مزاحم اسکرول و تاچ نباشند.
+                        در دسکتاپ (md:block) که موس هست، نمایش داده می‌شوند. */}
+                    
+                    {/* Next (Right side in RTL logic for visual symmetry, but physically Previous) */}
                     <div 
-                        className="fixed left-0 top-[100px] bottom-[100px] w-1/4 z-30 cursor-pointer group" 
+                        className="hidden md:block fixed right-0 top-[100px] bottom-[100px] w-24 z-30 cursor-pointer group hover:bg-gradient-to-l from-black/20 to-transparent" 
                         onClick={handlePrev}
                     >
-                        <motion.div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity">
-                             <ChevronRight size={32} />
+                        <motion.div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <ChevronRight size={40} className="text-slate-400" />
                         </motion.div>
                     </div>
 
-                    {/* Next (Right) */}
+                    {/* Prev (Left side) */}
                     <div 
-                        className="fixed right-0 top-[100px] bottom-[100px] w-1/4 z-30 cursor-pointer group" 
+                        className="hidden md:block fixed left-0 top-[100px] bottom-[100px] w-24 z-30 cursor-pointer group hover:bg-gradient-to-r from-black/20 to-transparent" 
                         onClick={handleNext}
                     >
-                        <motion.div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-30 transition-opacity">
-                             <ChevronLeft size={32} />
+                        <motion.div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <ChevronLeft size={40} className="text-slate-400" />
                         </motion.div>
                     </div>
 
-                    {/* Card */}
+
+                    {/* --- The Card --- */}
                     <AnimatePresence mode="wait" custom={direction}>
                         <motion.div
                             key={currentIndex}
@@ -195,6 +211,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                             animate="center"
                             exit="exit"
                             transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            // 🛠 z-40 برای اینکه بالاتر از هر لایه مزاحمی باشه
                             className="w-full max-w-lg mx-auto relative z-40"
                         >
                             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
@@ -248,15 +265,17 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                     </AnimatePresence>
                 </div>
 
-                {/* Milestone Toast */}
+                {/* Milestone Toast Notification */}
                 <AnimatePresence>
                     {showMilestone && (
                         <motion.div
-                            initial={{ opacity: 0, x: 100, scale: 0.9 }}
+                            initial={{ opacity: 0, x: -100, scale: 0.9 }} // RTL: ورود از چپ (یا راست بسته به سلیقه، ولی اینجا وسط یا گوشه چپ بهتره در فارسی)
                             animate={{ opacity: 1, x: 0, scale: 1 }}
-                            exit={{ opacity: 0, x: 100, scale: 0.9 }}
+                            exit={{ opacity: 0, x: -100, scale: 0.9 }}
                             transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                            className="fixed top-6 right-6 z-[60] max-w-[85vw] md:max-w-sm pointer-events-none"
+                            // RTL: نوتیفیکیشن سمت چپ بالا باشه بهتره یا راست؟ در فارسی معمولا راست استانداردتره
+                            className="fixed top-6 left-6 z-[60] max-w-[85vw] md:max-w-sm pointer-events-none"
+                            dir="rtl"
                         >
                             <div className="bg-slate-800/90 backdrop-blur-md px-4 py-3 rounded-xl shadow-2xl border-r-4 border-emerald-500 flex items-center gap-3">
                                 <div className="bg-emerald-500/20 p-2 rounded-full shrink-0">
@@ -305,7 +324,7 @@ const ReadingView: React.FC<ReadingViewProps> = ({
                 </button>
 
                 <p className="text-center text-slate-600 text-xs mt-4">
-                    بکش به چپ یا ضربه بزن
+                    بکش به راست یا ضربه بزن
                 </p>
             </motion.footer>
 
